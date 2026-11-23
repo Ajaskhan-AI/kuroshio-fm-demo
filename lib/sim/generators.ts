@@ -161,3 +161,20 @@ export function chwHistory(id: string, type: BuildingType, now: number, hours = 
   }
   return out;
 }
+
+/** Building power factor every 15 minutes over the last 24 h; dips a little at low load. */
+export function pfHistory(id: string, type: BuildingType, now: number, hours = 24): { t: number; pf: number }[] {
+  const end = Math.floor(now / SLOT) * SLOT;
+  const out: { t: number; pf: number }[] = [];
+  for (let t = end - hours * HOUR; t <= end; t += SLOT) {
+    const pf = 0.915 + (loadFactor(type, dubaiHour(t)) - 0.7) * 0.05 + noise(id, "pf", Math.floor(t / SLOT)) * 0.008;
+    out.push({ t, pf });
+  }
+  return out;
+}
+
+/** Energy for one Dubai day (kWh), from the same model as dailyHistory. */
+export function dayKwh(id: string, type: BuildingType, peakKw: number, dayStart: number): number {
+  const wf = weekdayFactor(type, dayStart + 12 * HOUR);
+  return peakKw * meanLoadFactor(type) * 24 * wf * (1 + noise(id, "day", Math.floor(dayStart / DAY)) * 0.05);
+}

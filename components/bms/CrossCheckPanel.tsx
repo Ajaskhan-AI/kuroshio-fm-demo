@@ -3,17 +3,13 @@
 import Link from "next/link";
 import { ArrowRight, Check, CheckCircle2, GitCompareArrows, Wrench, X } from "lucide-react";
 import { CONFIG } from "@/lib/config";
-import { fmtAed, fmtKw, fmtTime } from "@/lib/format";
+import { fmtAedEstimate, fmtKw, fmtTime } from "@/lib/format";
 import { crossChecks } from "@/lib/sim/rules";
 import { useSim } from "@/lib/sim/store";
 import type { Alarm, BmsPoint, BuildingLive, Feeder } from "@/lib/types";
+import { monthlyWasteAed } from "@/lib/energy";
 import { cn } from "@/lib/utils";
 import { LiveNumber } from "@/components/cards/LiveNumber";
-
-/** Monthly cost if a "running while off" load is left alone. Demo assumption: hours/day from config. */
-export function monthlyWasteAed(kw: number, rateAedPerKwh: number): number {
-  return kw * CONFIG.crossCheck.wasteHoursPerDay * 30 * rateAedPerKwh;
-}
 
 function Finding({
   building,
@@ -66,7 +62,7 @@ function Finding({
           <div>
             <p className="text-xs font-medium text-muted-foreground">Estimated waste</p>
             <p className="text-2xl font-bold">
-              <LiveNumber value={waste} format={(v) => `${fmtAed(Math.round(v / 10) * 10)} / month`} />
+              <LiveNumber value={waste} format={(v) => `${fmtAedEstimate(v)} / month`} />
             </p>
             <p className="text-xs text-muted-foreground">
               At {CONFIG.crossCheck.wasteHoursPerDay} h a day on the demo tariff. Demo assumption.

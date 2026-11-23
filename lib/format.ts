@@ -16,6 +16,8 @@ export const fmtKw = (v: number) => `${fmtNum(v, Math.abs(v) < 100 ? 1 : 0)} kW`
 export const fmtKwh = (v: number) => `${fmtNum(v, Math.abs(v) < 100 ? 1 : 0)} kWh`;
 export const fmtMwh = (v: number) => `${fmtNum(v, 1)} MWh`;
 export const fmtAed = (v: number) => `AED ${fmtNum(v, Math.abs(v) < 1_000 ? 2 : 0)}`;
+/** Whole dirhams, rounded to the nearest 10 — for estimates, where fils would be false precision. */
+export const fmtAedEstimate = (v: number) => `AED ${fmtNum(Math.round(v / 10) * 10)}`;
 export const fmtTemp = (v: number) => `${fmtNum(v, 1)} °C`;
 export const fmtV = (v: number) => `${fmtNum(v, 0)} V`;
 export const fmtA = (v: number) => `${fmtNum(v, v < 100 ? 1 : 0)} A`;

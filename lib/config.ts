@@ -69,6 +69,31 @@ export const CONFIG = {
     wasteHoursPerDay: 8,
   },
 
+  /**
+   * After-hours waste finder (CLAUDE.md §6.4). Demo assumptions, editable.
+   * Window = when the building is meant to be quiet; expected = the share of a feeder's daytime
+   * peak that is reasonable to still be running then (security lighting, servers, fridges…).
+   * EV chargers are left out on purpose: overnight charging is the behaviour you want.
+   */
+  afterHours: {
+    window: {
+      Office: { from: 20, to: 7 },
+      Retail: { from: 23, to: 9 },
+      "Mixed use": { from: 23, to: 6 },
+      "Residential tower": { from: 1, to: 5 },
+      Residential: { from: 1, to: 5 },
+    },
+    expectedShare: {
+      commercial: { lighting: 0.12, power: 0.18, ventilation: 0.2 },
+      residential: { lighting: 0.3, power: 0.4, ventilation: 0.3 },
+    },
+    /** Findings worth less than this are not listed. */
+    minAedPerMonth: 150,
+  },
+
+  /** Power factor below this risks a utility penalty or surcharge. Demo assumption. */
+  pfPenaltyThreshold: 0.9,
+
   /** Manual meter-reading rounds a technician would otherwise do, per panel per day. Demo assumption. */
   manualRoundsPerPanelPerDay: 2,
   /** Minutes a technician spends reaching and reading one panel by hand. Demo assumption. */
