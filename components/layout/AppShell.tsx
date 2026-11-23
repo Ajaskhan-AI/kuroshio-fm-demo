@@ -6,6 +6,8 @@ import { buildingIdForPath } from "@/lib/nav";
 import { getBuilding } from "@/lib/buildings";
 import { useUiStore } from "@/lib/ui-store";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SimRunner } from "@/components/sim/SimRunner";
+import { selectOpenAlarmCount, useSim } from "@/lib/sim/store";
 import { Breadcrumbs } from "./Breadcrumbs";
 import { MobileTabBar } from "./MobileTabBar";
 import { Sidebar } from "./Sidebar";
@@ -14,6 +16,7 @@ import { TopBar } from "./TopBar";
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const setBuildingId = useUiStore((s) => s.setBuildingId);
+  const openAlarms = useSim(selectOpenAlarmCount);
 
   // Keep the switcher in step with the URL when a building page is opened directly.
   useEffect(() => {
@@ -28,10 +31,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <TooltipProvider delayDuration={200}>
+      <SimRunner />
       <div className="flex min-h-dvh">
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
-          <TopBar />
+          <TopBar openAlarms={openAlarms} />
           <main className="flex-1 px-4 pb-24 pt-4 md:px-6 md:pb-8 md:pt-6">
             <Breadcrumbs />
             {children}
