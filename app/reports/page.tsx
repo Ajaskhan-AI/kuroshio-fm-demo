@@ -1,17 +1,11 @@
-import { ScreenHeader, ScreenPlaceholder } from "@/components/layout/ScreenHeader";
+import { ScreenHeader } from "@/components/layout/ScreenHeader";
+import { ReportsView } from "@/components/reports/ReportsView";
 
-export default function Page() {
+export default function ReportsPage() {
   return (
     <>
-      <ScreenHeader title="Carbon and monthly report" subtitle="Scope 2 emissions and a one-click owner report." />
-      <ScreenPlaceholder
-        step={9}
-        points={[
-    "Scope 2 tCO₂e from metered kWh",
-    "Monthly owner report PDF with preview",
-    "CSV export",
-        ]}
-      />
+      <ScreenHeader title="Carbon and reports" subtitle="Scope 2 from metered energy, and the monthly owner report in one click." />
+      <ReportsView />
     </>
   );
 }

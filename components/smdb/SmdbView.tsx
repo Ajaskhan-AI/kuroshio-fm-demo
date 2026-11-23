@@ -59,7 +59,11 @@ export function SmdbView({ buildingId }: { buildingId: string }) {
   const activeChip = useRef<HTMLButtonElement>(null);
   const activeName = panel?.name;
   useEffect(() => {
-    activeChip.current?.scrollIntoView({ block: "nearest", inline: "center" });
+    // Scroll only the chip row. scrollIntoView would also nudge outer scrollers, which on phones
+    // widened the layout viewport (the page rendered zoomed out).
+    const chip = activeChip.current;
+    const row = chip?.closest("nav");
+    if (chip && row) row.scrollLeft = chip.offsetLeft - (row.clientWidth - chip.offsetWidth) / 2;
   }, [activeName, ready]);
 
   const [feederPick, setFeederPick] = useState<{ panelId: string; feederId: string } | null>(null);
@@ -80,7 +84,7 @@ export function SmdbView({ buildingId }: { buildingId: string }) {
       <TopAlert alarm={worstAlarm(open)} openCount={open.length} scope={building.info.name} />
 
       {/* Panel selector: chips, not a dropdown (CLAUDE.md §5). */}
-      <nav aria-label="Panels" className="no-scrollbar -mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+      <nav aria-label="Panels" className="no-scrollbar relative -mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
         <ul className="flex w-max gap-2 md:w-auto md:flex-wrap">
           {list.map((p) => {
             const st = panelStatus(p, open);
