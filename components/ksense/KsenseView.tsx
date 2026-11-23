@@ -171,7 +171,11 @@ export function KsenseView() {
             <p className="rounded-xl border border-dashed border-border bg-card p-6 text-sm text-muted-foreground">Every chamber here is in range. Nothing needs attention.</p>
           )}
         </div>
-        <div ref={detailRef} className="order-first scroll-mt-20 lg:order-none lg:sticky lg:top-20 lg:self-start">
+        {/* Sticky beside the tiles, but never taller than the screen: the panel scrolls on its own so its bottom is always reachable. */}
+        <div
+          ref={detailRef}
+          className="order-first scroll-mt-20 lg:order-none lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:rounded-xl"
+        >
           <ChamberDetail chamber={selected} alarms={open} now={now} />
         </div>
       </div>
