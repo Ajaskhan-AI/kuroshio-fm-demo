@@ -145,6 +145,23 @@
   }
 }
 
+/* Alarm pins pulse (CLAUDE.md §5). SVG-safe: scale around the circle's own centre. */
+@keyframes kfm-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+.kfm-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: kfm-pulse 1.6s ease-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

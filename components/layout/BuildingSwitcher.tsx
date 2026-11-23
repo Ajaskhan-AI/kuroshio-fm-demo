@@ -35,7 +35,7 @@ export function BuildingSwitcher() {
         <Button variant="outline" className="h-11 min-w-0 max-w-[9.5rem] justify-start gap-2 px-3 sm:max-w-xs">
           <Building2 className="hidden size-4 shrink-0 text-primary sm:block" aria-hidden />
           <span className="truncate font-semibold">{current?.name ?? "Select building"}</span>
-          <span className="hidden truncate text-muted-foreground sm:inline">· {current?.area}</span>
+          <span className="hidden truncate text-muted-foreground xl:inline">· {current?.area}</span>
           <ChevronDown className="ml-auto size-4 shrink-0 opacity-60" aria-hidden />
         </Button>
       </DropdownMenuTrigger>
