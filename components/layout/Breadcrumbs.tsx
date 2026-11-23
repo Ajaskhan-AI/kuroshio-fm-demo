@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { getBuilding } from "@/lib/buildings";
 import { NAV_ITEMS, buildingIdForPath, screenForPath } from "@/lib/nav";
@@ -11,15 +11,17 @@ interface Crumb {
   href?: string;
 }
 
-/** Portfolio › Building › Screen (panel / asset level is added by those screens later). */
+/** Portfolio › Building › Screen › Panel. */
 export function Breadcrumbs() {
   const pathname = usePathname();
+  const panel = useSearchParams().get("panel");
   const screen = NAV_ITEMS.find((n) => n.key === screenForPath(pathname));
   const building = getBuilding(buildingIdForPath(pathname));
 
   const crumbs: Crumb[] = [{ label: "Portfolio", href: "/" }];
   if (building) crumbs.push({ label: building.name, href: `/buildings/${building.id}/smdb` });
-  if (screen && screen.key !== "portfolio") crumbs.push({ label: screen.label });
+  if (screen && screen.key !== "portfolio") crumbs.push({ label: screen.label, href: panel ? pathname : undefined });
+  if (panel && screen?.key === "smdb") crumbs.push({ label: panel });
   if (crumbs.length === 1) return null;
 
   return (

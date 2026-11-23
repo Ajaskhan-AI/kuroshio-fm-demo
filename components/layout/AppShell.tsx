@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { Suspense, useEffect, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { buildingIdForPath } from "@/lib/nav";
 import { getBuilding } from "@/lib/buildings";
@@ -37,7 +37,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar openAlarms={openAlarms} />
           <main className="flex-1 px-4 pb-24 pt-4 md:px-6 md:pb-8 md:pt-6">
-            <Breadcrumbs />
+            {/* Reads ?panel=…, which only exists in the browser. */}
+            <Suspense fallback={null}>
+              <Breadcrumbs />
+            </Suspense>
             {children}
           </main>
         </div>

@@ -59,8 +59,10 @@ export const CONFIG = {
   /** Random minor events elsewhere in the portfolio so it never looks static (§7). */
   minorEvents: { minIntervalS: 30, maxIntervalS: 60, minDurationS: 60, maxDurationS: 180 },
 
-  /** Manual meter-reading rounds a technician would otherwise do, per panel per day. */
+  /** Manual meter-reading rounds a technician would otherwise do, per panel per day. Demo assumption. */
   manualRoundsPerPanelPerDay: 2,
+  /** Minutes a technician spends reaching and reading one panel by hand. Demo assumption. */
+  minutesPerManualReading: 6,
 } as const;
 
 export type Priority = keyof typeof CONFIG.slaMinutes;

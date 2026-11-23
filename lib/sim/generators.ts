@@ -122,3 +122,23 @@ export function dailyHistory(id: string, type: BuildingType, peakKw: number, now
 export function typicalMonthlyKwh(type: BuildingType, peakKw: number): number {
   return peakKw * meanLoadFactor(type) * 24 * 30;
 }
+
+export interface FeederPoint {
+  t: number;
+  kw: number;
+  a: number;
+}
+
+/** Feeder kW and average phase current every 15 minutes over the last 24 h (derived from the building curve). */
+export function feederHistory(
+  building: { id: string; type: BuildingType; peakKw: number },
+  panelShare: number,
+  feeder: { id: string; share: number; pfBase: number },
+  now: number,
+  hours = 24,
+): FeederPoint[] {
+  return buildingHistory(building.id, building.type, building.peakKw, now, hours, 15).map(({ t, kw }) => {
+    const fkw = kw * panelShare * feeder.share * (1 + noise(feeder.id, Math.floor(t / SLOT)) * 0.04);
+    return { t, kw: fkw, a: (fkw * 1000) / (Math.sqrt(3) * 400 * feeder.pfBase) };
+  });
+}
