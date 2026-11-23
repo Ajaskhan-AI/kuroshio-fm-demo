@@ -5,6 +5,7 @@ import { BUILDINGS, type BuildingInfo } from "../buildings";
 import { CONFIG, type Priority } from "../config";
 import { blendedRateAedPerKwh } from "../tariff";
 import type {
+  Alarm,
   Asset,
   AssetType,
   BmsPoint,
@@ -250,6 +251,8 @@ const STARTING_FAULTS: { kind: FaultKind; building: string; panel?: string; feed
   { kind: "panel-hot", building: "sharjah-hub", panel: "SMDB-08", minutesAgo: 9, minutesLeft: 8 },
   { kind: "filter-dp", building: "jlt-one", point: "AHU-2:filter-p", minutesAgo: 42, minutesLeft: 20 },
   { kind: "imbalance", building: "reem-res", panel: "SMDB-05", feeder: 1, minutesAgo: 6, minutesLeft: 6 },
+  // BMS says AHU-1 is off, the meter says it isn't: the BMS screen's cross-check has a live finding from the start.
+  { kind: "bms-override", building: "bb-plaza", point: "AHU-1:fan-status", minutesAgo: 47, minutesLeft: 150 },
 ];
 
 export function createInitialState(now: number): SimData {
@@ -326,14 +329,25 @@ export function createInitialState(now: number): SimData {
   // Settle live values (temperatures converge) without advancing the clock.
   for (let n = 0; n < 20; n++) state = advance(state, now);
 
-  // Alarms from starting conditions began before the demo opened: back-date them.
-  const ago = new Map(faults.map((f) => [f.buildingId, f.startedAt]));
+  // Alarms from starting conditions began before the demo opened: back-date each to its fault.
+  const startOf = (a: Alarm): number => {
+    const f = faults.find(
+      (x) =>
+        x.buildingId === a.buildingId &&
+        ((x.feederId && x.feederId === a.target.feederId) ||
+          (!x.feederId && x.panelId && x.panelId === a.target.panelId) ||
+          (x.pointId && x.pointId.split(":")[1] === a.target.equipment)),
+    );
+    return f ? f.startedAt : now - 2 * HOUR;
+  };
+  const alarms = state.alarms.map((a) => ({ ...a, raisedAt: startOf(a) }));
+  const raisedById = new Map(alarms.map((a) => [a.id, a.raisedAt]));
   state = {
     ...state,
-    alarms: state.alarms.map((a) => ({ ...a, raisedAt: ago.get(a.buildingId) ?? now - 2 * HOUR })),
+    alarms,
     workOrders: state.workOrders.map((w) => {
       if (w.status === "closed" || !w.alarmId) return w;
-      const created = ago.get(w.buildingId) ?? now - 2 * HOUR;
+      const created = raisedById.get(w.alarmId) ?? now - 2 * HOUR;
       const slaDueAt = created + CONFIG.slaMinutes[w.priority] * MINUTE;
       const picked = now - created > 5 * MINUTE;
       return {

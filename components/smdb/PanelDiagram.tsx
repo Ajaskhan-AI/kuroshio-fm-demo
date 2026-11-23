@@ -53,7 +53,7 @@ function feederState(f: Feeder, alarm: Alarm | undefined) {
   if (f.tripped) return { label: "Tripped", icon: X, cls: "bg-danger text-white" };
   if (!alarm) return { label: "Normal", icon: CheckCircle2, cls: "bg-success-tint text-success" };
   const label =
-    alarm.type === "overload" ? "Overloaded" : alarm.type === "low-pf" ? "Low PF" : alarm.type === "phase-imbalance" ? "Imbalance" : alarm.title;
+    alarm.type === "overload" ? "Overloaded" : alarm.type === "low-pf" ? "Low PF" : alarm.type === "phase-imbalance" ? "Imbalance" : alarm.type === "bms-mismatch" ? "BMS mismatch" : alarm.title;
   return alarm.priority === "P1"
     ? { label, icon: AlertOctagon, cls: "bg-danger/12 text-danger" }
     : { label, icon: AlertTriangle, cls: "bg-warning/15 text-foreground [&_svg]:text-warning" };

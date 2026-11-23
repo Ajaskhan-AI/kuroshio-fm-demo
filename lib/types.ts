@@ -187,7 +187,9 @@ export type FaultKind =
   | "panel-hot"
   | "panel-offline"
   | "filter-dp"
-  | "zone-hot";
+  | "zone-hot"
+  /** BMS reports the equipment OFF (schedule) while it keeps drawing power: override or failed relay. */
+  | "bms-override";
 
 /** A temporary condition injected into the simulation; rules turn its effects into alarms. */
 export interface Fault {

@@ -142,3 +142,22 @@ export function feederHistory(
     return { t, kw: fkw, a: (fkw * 1000) / (Math.sqrt(3) * 400 * feeder.pfBase) };
   });
 }
+
+export interface ChwPoint {
+  t: number;
+  supply: number;
+  ret: number;
+}
+
+/** Chilled-water supply and return temperature every 15 minutes over the last 24 h. ΔT widens with load. */
+export function chwHistory(id: string, type: BuildingType, now: number, hours = 24): ChwPoint[] {
+  const end = Math.floor(now / SLOT) * SLOT;
+  const out: ChwPoint[] = [];
+  for (let t = end - hours * HOUR; t <= end; t += SLOT) {
+    const slot = Math.floor(t / SLOT);
+    const supply = 6.5 + noise(id, "chws", slot) * 0.25;
+    const ret = supply + 5.2 + (loadFactor(type, dubaiHour(t)) - 0.75) * 2.4 + noise(id, "chwr", slot) * 0.25;
+    out.push({ t, supply, ret });
+  }
+  return out;
+}

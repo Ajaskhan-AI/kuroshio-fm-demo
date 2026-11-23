@@ -59,6 +59,16 @@ export const CONFIG = {
   /** Random minor events elsewhere in the portfolio so it never looks static (§7). */
   minorEvents: { minIntervalS: 30, maxIntervalS: 60, minDurationS: 60, maxDurationS: 180 },
 
+  /** BMS vs meter cross-check (CLAUDE.md §6.3). */
+  crossCheck: {
+    /** Above this, equipment the BMS calls OFF is really running. */
+    runningKw: 3,
+    /** Below this, equipment the BMS calls ON is really stopped. */
+    stoppedKw: 0.5,
+    /** Hours a day an unnoticed mismatch would typically waste (e.g. 22:00–06:00). Demo assumption. */
+    wasteHoursPerDay: 8,
+  },
+
   /** Manual meter-reading rounds a technician would otherwise do, per panel per day. Demo assumption. */
   manualRoundsPerPanelPerDay: 2,
   /** Minutes a technician spends reaching and reading one panel by hand. Demo assumption. */

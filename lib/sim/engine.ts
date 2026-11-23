@@ -18,7 +18,7 @@ import type {
 } from "../types";
 import { HOUR, MINUTE, buildingKwAt, dubaiDayOfMonth, dubaiDayStart, dubaiHour, loadFactor } from "./generators";
 import { between, clamp, jitter, pick } from "./random";
-import { assetConditions, bmsConditions, panelConditions, type Condition } from "./rules";
+import { assetConditions, bmsConditions, crossCheckConditions, panelConditions, type Condition } from "./rules";
 import { isOpen, type SimData } from "./state";
 
 const SQRT3 = Math.sqrt(3);
@@ -47,7 +47,16 @@ function indexFaults(faults: Fault[]): FaultIndex {
   return idx;
 }
 
-function updatePanel(p: Panel, buildingKw: number, lf: number, dt: number, now: number, faults: FaultIndex): Panel {
+/** BMS-controlled equipment that has its own meter feeder (feeder name = BMS equipment name). */
+export const METERED_EQUIPMENT = ["AHU-1", "AHU-2", "AHU-3", "Chiller-1", "Chiller-2"] as const;
+
+/** What the plant is physically doing, per equipment: BMS state, plus overrides the BMS can't see. */
+interface PlantState {
+  bmsOn: Map<string, boolean>;
+  overridden: Set<string>;
+}
+
+function updatePanel(p: Panel, buildingKw: number, lf: number, dt: number, now: number, faults: FaultIndex, plant: PlantState): Panel {
   const pf = faults.panel.get(p.id);
   if (pf?.has("panel-offline")) {
     // Meter silent: keep the last values, status offline, no new timestamp.
@@ -70,6 +79,10 @@ function updatePanel(p: Panel, buildingKw: number, lf: number, dt: number, now: 
     let pfv = clamp(f.pfBase + (Math.random() - 0.5) * 0.01, 0.5, 0.99);
     if (ff?.has("low-pf")) pfv = 0.805 + Math.random() * 0.02;
     let kw = tripped ? 0 : panelKw * f.share * jitter(0.02);
+    // Equipment the BMS has switched off draws only standby power — unless something overrides it.
+    if (!tripped && plant.bmsOn.get(f.name) === false) {
+      kw = plant.overridden.has(f.name) ? kw * 0.45 : 0.2 + Math.random() * 0.15;
+    }
     if (ff?.has("overload")) {
       // Push the feeder to ~108 % of its breaker rating.
       kw = (f.ratedA * 1.08 * SQRT3 * CONFIG.electrical.voltageLL * pfv) / 1000;
@@ -117,7 +130,8 @@ function updateBms(points: BmsPoint[], b: BuildingLive, hour: number, lf: number
     const pf = faults.point.get(pt.id);
     let value = pt.value;
     if (pt.kind === "status") {
-      if (pt.system === "AHU" || pt.system === "FCU") value = scheduled ? 1 : 0;
+      if (pf?.has("bms-override")) value = 0;
+      else if (pt.system === "AHU" || pt.system === "FCU") value = scheduled ? 1 : 0;
       else if (pt.equipment === "Chiller-2" || pt.equipment === "CHWP-2") value = secondChiller ? 1 : 0;
       else value = 1;
     } else if (pf?.has("filter-dp")) {
@@ -145,6 +159,7 @@ const MINOR_KINDS: { kind: FaultKind; weight: number }[] = [
   { kind: "panel-offline", weight: 1 },
   { kind: "overload", weight: 1 },
   { kind: "feeder-trip", weight: 0.5 },
+  { kind: "bms-override", weight: 1 },
 ];
 
 function randomFault(s: SimData, now: number, id: string): Fault | null {
@@ -156,6 +171,10 @@ function randomFault(s: SimData, now: number, id: string): Fault | null {
   const ev = CONFIG.minorEvents;
   const base = { id, kind, buildingId: b.id, startedAt: now, endsAt: now + between(r, ev.minDurationS, ev.maxDurationS) * 1000 };
 
+  if (kind === "bms-override") {
+    const equipment = pick(r, ["AHU-1", "AHU-2", "AHU-3"]);
+    return { ...base, pointId: `${b.id}:${equipment}:fan-status`, endsAt: now + between(r, 120, 240) * 1000 };
+  }
   if (kind === "filter-dp" || kind === "zone-hot") {
     const pts = s.bmsPoints[b.id].filter((p) => (kind === "filter-dp" ? p.name === "Filter ΔP" : p.system === "Zone"));
     return { ...base, pointId: pick(r, pts).id };
@@ -240,12 +259,19 @@ export function advance(s: SimData, now: number): SimData {
   for (const b of Object.values(s.buildings)) {
     const lf = loadFactor(b.info.type, hour);
     const kw = buildingKwAt(b.info.id, b.info.type, b.peakKw, now) * jitter(0.01);
+    const pts = updateBms(s.bmsPoints[b.info.id], b, hour, lf, now, fi);
+    bmsPoints[b.info.id] = pts;
+    const plant: PlantState = { bmsOn: new Map(), overridden: new Set() };
+    for (const pt of pts) {
+      if (pt.kind !== "status" || !(METERED_EQUIPMENT as readonly string[]).includes(pt.equipment)) continue;
+      plant.bmsOn.set(pt.equipment, pt.value === 1);
+      if (fi.point.get(pt.id)?.has("bms-override")) plant.overridden.add(pt.equipment);
+    }
     for (const id of s.panelIds[b.info.id]) {
       let p = s.panels[id];
       if (newDay) p = { ...p, feeders: p.feeders.map((f) => ({ ...f, kwhToday: 0 })) };
-      panels[id] = updatePanel(p, kw, lf, dt, now, fi);
+      panels[id] = updatePanel(p, kw, lf, dt, now, fi, plant);
     }
-    bmsPoints[b.info.id] = updateBms(s.bmsPoints[b.info.id], b, hour, lf, now, fi);
   }
 
   // 3. Rules → conditions.
@@ -254,6 +280,10 @@ export function advance(s: SimData, now: number): SimData {
   const conditions: Condition[] = [];
   for (const p of Object.values(panels)) conditions.push(...panelConditions(p, wasActive));
   for (const pts of Object.values(bmsPoints)) conditions.push(...bmsConditions(pts, wasActive));
+  for (const b of Object.values(s.buildings)) {
+    const feeders = s.panelIds[b.info.id].flatMap((id) => panels[id].feeders);
+    conditions.push(...crossCheckConditions(b.info.id, bmsPoints[b.info.id], feeders));
+  }
   for (const a of Object.values(s.assets)) conditions.push(...assetConditions(a, wasActive));
   const condByKey = new Map(conditions.map((c) => [c.key, c]));
 
@@ -264,6 +294,11 @@ export function advance(s: SimData, now: number): SimData {
   for (const c of conditions) {
     if (activeByKey.has(c.key)) continue;
     const alarmId = `AL-${++seq.alarm}`;
+    // A BMS / meter mismatch is a finding for a person to judge: its work order is created from the cross-check panel.
+    if (c.type === "bms-mismatch") {
+      raised.push({ ...c, id: alarmId, raisedAt: now, status: "active" });
+      continue;
+    }
     const wo = newWorkOrder(
       { technicians: s.technicians, workOrders: [...newOrders, ...workOrders] },
       ++seq.workOrder,

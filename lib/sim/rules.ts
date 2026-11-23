@@ -4,7 +4,7 @@
 
 import { CONFIG, type Priority } from "../config";
 import { fmtA, fmtNum, fmtPa, fmtPct, fmtPf, fmtTemp, fmtV } from "../format";
-import type { AlarmSource, AlarmTarget, AlarmType, Asset, BmsPoint, Panel } from "../types";
+import type { AlarmSource, AlarmTarget, AlarmType, Asset, BmsPoint, Feeder, Panel } from "../types";
 
 export interface Condition {
   key: string;
@@ -179,4 +179,50 @@ export function assetConditions(a: Asset, wasActive: (key: string) => boolean): 
       target: { assetId: a.id, equipment: a.name },
     },
   ];
+}
+
+export interface CrossCheck {
+  equipment: string;
+  bmsOn: boolean;
+  kw: number;
+  feederId: string;
+  /** "running-while-off": BMS says OFF, meter sees load. "stopped-while-on": BMS says ON, meter sees nothing. */
+  mismatch: "running-while-off" | "stopped-while-on" | null;
+}
+
+/** Compare what the BMS reports with what the Kuroshio meter measures, per metered piece of plant. */
+export function crossChecks(points: BmsPoint[], feeders: Feeder[]): CrossCheck[] {
+  const out: CrossCheck[] = [];
+  for (const pt of points) {
+    if (pt.kind !== "status") continue;
+    const f = feeders.find((x) => x.name === pt.equipment);
+    if (!f) continue;
+    const bmsOn = pt.value === 1;
+    const mismatch =
+      !bmsOn && f.kw > CONFIG.crossCheck.runningKw
+        ? "running-while-off"
+        : bmsOn && !f.tripped && f.kw < CONFIG.crossCheck.stoppedKw
+          ? "stopped-while-on"
+          : null;
+    out.push({ equipment: pt.equipment, bmsOn, kw: f.kw, feederId: f.id, mismatch });
+  }
+  return out;
+}
+
+export function crossCheckConditions(buildingId: string, points: BmsPoint[], feeders: Feeder[]): Condition[] {
+  return crossChecks(points, feeders)
+    .filter((c) => c.mismatch)
+    .map((c) => ({
+      key: `${buildingId}:${c.equipment}:xcheck`,
+      buildingId,
+      source: "bms" as const,
+      priority: "P2" as const,
+      type: "bms-mismatch" as const,
+      title: "BMS and meter disagree",
+      detail:
+        c.mismatch === "running-while-off"
+          ? `${c.equipment}: BMS shows OFF, meter shows ${fmtNum(c.kw, 1)} kW`
+          : `${c.equipment}: BMS shows ON, meter shows ${fmtNum(c.kw, 1)} kW`,
+      target: { equipment: c.equipment, feederId: c.feederId },
+    }));
 }
