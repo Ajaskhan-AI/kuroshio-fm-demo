@@ -157,6 +157,9 @@ const ASSET_TEMPLATES: { name: string; type: AssetType; location: string }[] = [
 const HEALTH_OVERRIDES: Record<string, number> = {
   "bb-plaza:AHU-2 fan": 66,
   "marina-a:CHWP-2": 84,
+  // Two in the "watch" band so every level is on screen.
+  "deira-annex:CDWP-1": 76,
+  "jlt-one:CHWP-1": 78,
 };
 
 function seedAssets(b: BuildingInfo): Asset[] {
