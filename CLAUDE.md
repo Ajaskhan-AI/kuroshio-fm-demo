@@ -127,6 +127,15 @@ Light mode is the default. Dark mode toggle available.
 - QR code linking to the deployed URL.
 - "Coming next" strip: Chiller kW/TR, Indoor air quality, Water leak detection, Generator readiness, Lift uptime, CAFM integration.
 
+### 6.9 K-Sense cold chain (`/ksense`) — 9th menu item, key `9`
+K-Sense is Kuroshio's own sensor product, shown as a **live module** (no "Pilot-ready" label). Audience: **operators who run cold stores as a business** and want every chamber at every site on one dashboard. It has its own fictional portfolio of cold stores (not the six buildings) and its own alarms, so the FM screens are untouched.
+- **Measured per chamber:** temperature, humidity, door open/closed, room differential pressure (Pa; freezers pull a vacuum after the door closes, a stuck vacuum means an iced relief port).
+- **Measured per refrigeration unit:** suction pressure and discharge pressure (bar g), compressor power (kW). Low suction drifting down = possible refrigerant leak; high discharge = dirty condenser / condenser fan fault (UAE summers).
+- **Chamber types and bands (demo assumptions, `lib/ksense/config.ts`):** frozen −25 to −18 °C, chilled 0–4 °C, pharma 2–8 °C, fresh produce 10–14 °C. Defrost cycles are recognised and never raise a temperature alarm.
+- **Screen:** status-first banner → KPI row (chambers in range, open alarms, stock at risk AED, refrigeration kW) → site and status filter chips → chamber tiles grouped by site → chamber detail (24 h temperature chart with band shaded and defrost marked, live readings, refrigeration unit card, sensor battery/signal, alarms) → excursion log with CSV temperature certificate.
+- **Alarms:** temperature excursion (P1 frozen/pharma, P2 others), door open too long (P2), possible refrigerant leak (P2, predictive), high discharge pressure (P2), relief port iced (P3), sensor low battery (P3).
+- **Scripted incident (key `K`, presenter panel):** (1) Jebel Ali FR-02 dock door left open: −21 → −12 °C, P1 excursion with stock at risk, door closes at 35 s, recovers, excursion lands in the log with peak and duration; (2) in parallel, KIZAD PH-02 suction pressure falls 3.9 → 2.7 bar while the room is still in range: leak caught before the temperature moves.
+
 ## 7. Simulated data
 
 ### Fictional portfolio (6 buildings)
@@ -166,7 +175,7 @@ Light mode is the default. Dark mode toggle available.
 - Tick interval.
 
 ## 9. Event modes
-- **Presenter mode** (keyboard): `1`–`8` jump to screens, `I` trigger the incident, `R` reset simulation, `D` toggle dark mode. Show a tiny hint overlay on `?`.
+- **Presenter mode** (keyboard): `1`–`9` jump to screens, `I` trigger the incident, `K` trigger the K-Sense cold-chain incident, `R` reset simulation, `D` toggle dark mode. Show a tiny hint overlay on `?`.
 - **Kiosk mode:** `?kiosk=1` in URL. After 60 s with no input, auto-cycle screens every 12 s with the incident running. Any touch/click stops it.
 
 ## 10. Folder structure

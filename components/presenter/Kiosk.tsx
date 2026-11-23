@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { MonitorPlay } from "lucide-react";
 import { INCIDENT } from "@/lib/sim/scenario";
+import { useCold } from "@/lib/ksense/store";
 import { useSim } from "@/lib/sim/store";
 import { useUiStore } from "@/lib/ui-store";
 
@@ -23,6 +24,7 @@ const TOUR = [
   `/maintenance?asset=${encodeURIComponent(INCIDENT.pumpId)}`,
   "/reports",
   "/roi",
+  "/ksense",
 ];
 
 function kioskEnabled(): boolean {
@@ -63,6 +65,7 @@ export function Kiosk() {
       const lap = () => {
         // Fresh portfolio and a fresh incident each lap, so the story always plays from the start.
         useSim.getState().reset();
+        useCold.getState().reset();
         useSim.getState().triggerIncident();
         useUiStore.setState({ buildingId: INCIDENT.buildingId, touring: true, presenterOpen: false });
       };
@@ -71,6 +74,8 @@ export function Kiosk() {
       stepTimer.current = setInterval(() => {
         i = (i + 1) % TOUR.length;
         if (i === 0) lap();
+        // The cold-chain story starts as its screen comes up, so the door opens on camera.
+        if (TOUR[i] === "/ksense") useCold.getState().triggerIncident();
         router.push(TOUR[i]);
       }, STEP_MS);
     };

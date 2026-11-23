@@ -2,12 +2,14 @@
 
 import { useEffect } from "react";
 import { CONFIG } from "@/lib/config";
+import { useCold } from "@/lib/ksense/store";
 import { useSim } from "@/lib/sim/store";
 
 declare global {
   interface Window {
     /** Debug / presenter handle: window.__kfm.getState(). */
     __kfm?: typeof useSim;
+    __ksense?: typeof useCold;
   }
 }
 
@@ -15,12 +17,19 @@ declare global {
 export function SimRunner() {
   useEffect(() => {
     const { init, tick } = useSim.getState();
+    const cold = useCold.getState();
     init();
+    cold.init();
     window.__kfm = useSim;
-    const id = setInterval(() => tick(), CONFIG.tickMs);
+    window.__ksense = useCold;
+    const tickAll = () => {
+      tick();
+      useCold.getState().tick();
+    };
+    const id = setInterval(tickAll, CONFIG.tickMs);
     // Browsers slow timers in background tabs; catch up the moment the demo is in front again.
     const onVisible = () => {
-      if (document.visibilityState === "visible") tick();
+      if (document.visibilityState === "visible") tickAll();
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => {

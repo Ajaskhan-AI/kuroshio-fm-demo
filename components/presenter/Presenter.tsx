@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Flame, Keyboard, MonitorPlay, Moon, RotateCcw } from "lucide-react";
+import { Flame, Keyboard, MonitorPlay, Moon, RotateCcw, Snowflake } from "lucide-react";
 import { NAV_ITEMS, buildingIdForPath } from "@/lib/nav";
+import { useCold } from "@/lib/ksense/store";
 import { INCIDENT } from "@/lib/sim/scenario";
 import { useSim } from "@/lib/sim/store";
 import { applyTheme, readTheme } from "@/lib/theme";
@@ -25,7 +26,15 @@ export function usePresenterActions() {
     if (current && current !== INCIDENT.buildingId) router.push(pathname.replace(`/buildings/${current}`, `/buildings/${INCIDENT.buildingId}`));
   }, [pathname, router, setBuildingId]);
 
-  const reset = useCallback(() => useSim.getState().reset(), []);
+  const startColdIncident = useCallback(() => {
+    useCold.getState().triggerIncident();
+    if (pathname !== "/ksense") router.push("/ksense");
+  }, [pathname, router]);
+
+  const reset = useCallback(() => {
+    useSim.getState().reset();
+    useCold.getState().reset();
+  }, []);
   const toggleDark = useCallback(() => applyTheme(readTheme() === "dark" ? "light" : "dark"), []);
   const goTo = useCallback(
     (index: number) => {
@@ -34,12 +43,13 @@ export function usePresenterActions() {
     },
     [router],
   );
-  return { startIncident, reset, toggleDark, goTo };
+  return { startIncident, startColdIncident, reset, toggleDark, goTo };
 }
 
 const KEYS: [string, string][] = [
-  ["1 – 8", "Jump to a screen (same order as the menu)"],
+  ["1 – 9", "Jump to a screen (same order as the menu)"],
   ["I", "Start the Marina Tower A incident"],
+  ["K", "Start the K-Sense cold-chain incident"],
   ["R", "Reset the simulation"],
   ["D", "Dark mode on / off"],
   ["?", "Show or hide this panel"],
@@ -55,14 +65,16 @@ export function Presenter() {
   const open = useUiStore((s) => s.presenterOpen);
   const setOpen = useUiStore((s) => s.setPresenterOpen);
   const incident = useSim((s) => s.incident);
-  const { startIncident, reset, toggleDark, goTo } = usePresenterActions();
+  const coldIncident = useCold((s) => s.incident);
+  const { startIncident, startColdIncident, reset, toggleDark, goTo } = usePresenterActions();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target)) return;
       const k = e.key;
-      if (k >= "1" && k <= "8") goTo(Number(k) - 1);
+      if (k >= "1" && k <= "9") goTo(Number(k) - 1);
       else if (k === "i" || k === "I") startIncident();
+      else if (k === "k" || k === "K") startColdIncident();
       else if (k === "r" || k === "R") reset();
       else if (k === "d" || k === "D") toggleDark();
       else if (k === "?") setOpen(!useUiStore.getState().presenterOpen);
@@ -71,7 +83,7 @@ export function Presenter() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [goTo, startIncident, reset, toggleDark, setOpen]);
+  }, [goTo, startIncident, startColdIncident, reset, toggleDark, setOpen]);
 
   const btn = "inline-flex min-h-11 w-full items-center gap-3 rounded-lg border border-border bg-card px-4 text-left text-sm font-semibold hover:border-primary/50";
 
@@ -94,6 +106,18 @@ export function Presenter() {
             <Flame className="size-5 text-danger" aria-hidden />
             <span className="flex-1">{incident ? "Restart the incident" : "Start the incident"}</span>
             <kbd className="text-xs text-muted-foreground">I</kbd>
+          </button>
+          <button
+            type="button"
+            className={btn}
+            onClick={() => {
+              startColdIncident();
+              setOpen(false);
+            }}
+          >
+            <Snowflake className="size-5 text-primary" aria-hidden />
+            <span className="flex-1">{coldIncident ? "Restart the cold-chain incident" : "Start the cold-chain incident"}</span>
+            <kbd className="text-xs text-muted-foreground">K</kbd>
           </button>
           <button
             type="button"
@@ -127,6 +151,10 @@ export function Presenter() {
           <p className="mt-2 text-xs text-muted-foreground">
             The incident on Marina Tower A: SMDB-04 heats from 41 to 63 °C over 40 s, AHU-3 runs while the BMS says off, and CHW Pump-2 health falls to
             58. Alarms, work orders, the BMS cross-check, energy waste and the monthly report all pick it up.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            The cold-chain incident (K-Sense): the Jebel Ali FR-02 dock door is left open and the freezer climbs from −21 to −12 °C, then recovers and
+            lands in the excursion log. At the same time KIZAD PH-02 suction pressure falls: a refrigerant leak caught while the room is still in range.
           </p>
 
           <h3 className="mt-4 flex items-center gap-2 text-sm font-semibold">

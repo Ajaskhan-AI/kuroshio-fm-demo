@@ -6,6 +6,7 @@ import {
   FileText,
   LayoutGrid,
   Server,
+  Snowflake,
   Wrench,
   Zap,
   type LucideIcon,
@@ -30,9 +31,10 @@ export type ScreenKey =
   | "alarms"
   | "maintenance"
   | "reports"
-  | "roi";
+  | "roi"
+  | "ksense";
 
-// Order matters: presenter mode keys 1–8 follow this list (CLAUDE.md §9).
+// Order matters: presenter mode keys 1–9 follow this list (CLAUDE.md §9).
 export const NAV_ITEMS: readonly NavItem[] = [
   { key: "portfolio", label: "Portfolio overview", short: "Overview", icon: LayoutGrid, scoped: false, href: () => "/" },
   { key: "smdb", label: "Live SMDB monitor", short: "Live", icon: Activity, scoped: true, href: (id) => `/buildings/${id}/smdb` },
@@ -42,6 +44,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { key: "maintenance", label: "Predictive maintenance", short: "Maintenance", icon: Wrench, scoped: false, href: () => "/maintenance" },
   { key: "reports", label: "Carbon and reports", short: "Reports", icon: FileText, scoped: false, href: () => "/reports" },
   { key: "roi", label: "ROI and book a pilot", short: "ROI", icon: Calculator, scoped: false, href: () => "/roi" },
+  { key: "ksense", label: "K-Sense cold chain", short: "Cold chain", icon: Snowflake, scoped: false, href: () => "/ksense" },
 ] as const;
 
 /** Phone bottom bar: Overview, Live, Alarms, Energy, More (CLAUDE.md §5). */
