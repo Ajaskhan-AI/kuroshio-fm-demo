@@ -215,7 +215,8 @@ function seedHistory(now: number, startSeq: number): { orders: WorkOrder[]; seq:
       const priority: Priority = roll < 0.1 ? "P1" : roll < 0.45 ? "P2" : "P3";
       const slaMs = CONFIG.slaMinutes[priority] * MINUTE;
       const createdAt = now - between(r, 0.2, 30) * DAY;
-      const breach = r() < 0.05;
+      // ~2.5 % of jobs missed SLA: most sites on target, one or two just below, so the table has a story.
+      const breach = r() < 0.025;
       const response = breach ? slaMs * between(r, 1.05, 1.5) : slaMs * between(r, 0.15, 0.9);
       const respondedAt = createdAt + response;
       const closedAt = respondedAt + between(r, 20 * MINUTE, 3 * HOUR);

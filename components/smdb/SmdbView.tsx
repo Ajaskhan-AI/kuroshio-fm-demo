@@ -80,7 +80,7 @@ export function SmdbView({ buildingId }: { buildingId: string }) {
       <TopAlert alarm={worstAlarm(open)} openCount={open.length} scope={building.info.name} />
 
       {/* Panel selector: chips, not a dropdown (CLAUDE.md §5). */}
-      <nav aria-label="Panels" className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+      <nav aria-label="Panels" className="no-scrollbar -mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
         <ul className="flex w-max gap-2 md:w-auto md:flex-wrap">
           {list.map((p) => {
             const st = panelStatus(p, open);

@@ -145,6 +145,14 @@
   }
 }
 
+/* Sideways-scrolling chip rows on phones: swipeable, no visible scrollbar. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Alarm pins pulse (CLAUDE.md §5). SVG-safe: scale around the circle's own centre. */
 @keyframes kfm-pulse {
   0% {
