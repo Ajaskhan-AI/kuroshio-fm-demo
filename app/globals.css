@@ -34,6 +34,11 @@
 
   --success: #16a34a;
   --success-tint: #e6faf6;
+  /* Text-on-surface shades that pass WCAG AA (4.5:1); the brand colours stay for fills and icons. */
+  --success-text: #15803d;
+  --primary-text: #1f54cc;
+  /* Solid red fills behind white text (P1 chips, critical banner, badges): 4.8:1 in both themes. */
+  --danger-strong: #dc2626;
   --warning: #f59e0b;
   --danger: #dc2626;
   --destructive: #dc2626;
@@ -47,7 +52,11 @@
 }
 
 .dark {
-  --primary: #4a7be0;
+  /* Fills a touch deeper than the #4A7BE0 brand tint so white button text passes 4.5:1. */
+  --primary: #3d6fd6;
+  --primary-text: #8fb0f0;
+  --success-text: #22c55e;
+  --danger-strong: #dc2626;
   --primary-foreground: #ffffff;
   --primary-light: #2a4a8f;
 
@@ -109,6 +118,7 @@
   --color-success-tint: var(--success-tint);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+  --color-danger-strong: var(--danger-strong);
   --color-offline: var(--offline);
 
   --color-chart-1: var(--chart-1);
@@ -168,6 +178,17 @@
   transform-box: fill-box;
   transform-origin: center;
   animation: kfm-pulse 1.6s ease-out infinite;
+}
+
+/*
+ * Text colour overrides (unlayered, so they win over Tailwind's utilities): blue and green text
+ * use the AA-safe text shades; fills keep the brand tokens.
+ */
+.text-primary {
+  color: var(--primary-text);
+}
+.text-success {
+  color: var(--success-text);
 }
 
 @media (prefers-reduced-motion: reduce) {

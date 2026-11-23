@@ -46,17 +46,17 @@ export function TopAlert({ alarm, openCount, scope }: { alarm: Alarm | undefined
       className={cn(
         "group flex min-h-14 flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border px-4 py-3 text-sm transition-colors",
         critical
-          ? "border-danger bg-danger text-white hover:bg-danger/90"
+          ? "border-danger-strong bg-danger-strong text-white hover:bg-danger-strong/90"
           : "border-warning/50 bg-warning/10 text-foreground hover:border-warning",
       )}
     >
       <Icon className={cn("size-5 shrink-0", critical ? "text-white" : "text-warning")} aria-hidden />
-      <PriorityChip priority={alarm.priority} short className={critical ? "bg-white text-danger" : undefined} />
+      <PriorityChip priority={alarm.priority} short className={critical ? "bg-white text-danger-strong" : undefined} />
       <span className="font-bold">{alarm.title}</span>
-      <span className={cn("min-w-0 flex-1 truncate", critical ? "text-white/90" : "text-muted-foreground")}>
+      <span className={cn("min-w-0 flex-1 truncate", critical ? "text-white" : "text-muted-foreground")}>
         {building?.name} · {alarm.detail}
       </span>
-      <span className={cn("hidden whitespace-nowrap tabular-nums sm:inline", critical ? "text-white/80" : "text-muted-foreground")} suppressHydrationWarning>
+      <span className={cn("hidden whitespace-nowrap tabular-nums sm:inline", critical ? "text-white" : "text-muted-foreground")} suppressHydrationWarning>
         {now ? timeAgo(alarm.raisedAt, now) : ""}
         {others > 0 && ` · +${others} more open`}
       </span>

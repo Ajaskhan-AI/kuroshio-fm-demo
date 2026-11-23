@@ -87,6 +87,7 @@ export function Kiosk() {
 
     const onStart = () => {
       enabled.current = true;
+      void keepAwake();
       try {
         sessionStorage.setItem(KIOSK_KEY, "1");
       } catch {
@@ -96,6 +97,21 @@ export function Kiosk() {
       setTimeout(startTour, 50);
     };
 
+    // Keep a kiosk screen from dimming or locking (supported on https in Chromium and Safari 16.4+).
+    let lock: { release: () => Promise<void> } | null = null;
+    const keepAwake = async () => {
+      if (!enabled.current || lock || document.visibilityState !== "visible") return;
+      try {
+        lock = await (navigator as Navigator & { wakeLock?: { request: (t: "screen") => Promise<{ release: () => Promise<void> }> } }).wakeLock?.request("screen") ?? null;
+        (lock as unknown as EventTarget | null)?.addEventListener?.("release", () => (lock = null));
+      } catch {
+        // Not allowed here (http, battery saver): the tablet's own display settings apply.
+      }
+    };
+    const onVisibility = () => void keepAwake();
+    document.addEventListener("visibilitychange", onVisibility);
+    void keepAwake();
+
     const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
     events.forEach((e) => window.addEventListener(e, onInput, { passive: true }));
     window.addEventListener(START_TOUR_EVENT, onStart);
@@ -104,6 +120,8 @@ export function Kiosk() {
     return () => {
       events.forEach((e) => window.removeEventListener(e, onInput));
       window.removeEventListener(START_TOUR_EVENT, onStart);
+      document.removeEventListener("visibilitychange", onVisibility);
+      void lock?.release().catch(() => {});
       if (idleTimer.current) clearTimeout(idleTimer.current);
       stopTour();
     };

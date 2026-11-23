@@ -60,7 +60,7 @@ export function TempGauge({ tempC, offline }: { tempC: number; offline?: boolean
           "mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm font-semibold",
           level === "normal" && "bg-success-tint text-success",
           level === "warning" && "bg-warning/15 text-foreground [&_svg]:text-warning",
-          level === "alarm" && "bg-danger text-white",
+          level === "alarm" && "bg-danger-strong text-white",
           level === "offline" && "bg-offline/15 text-muted-foreground",
         )}
       >

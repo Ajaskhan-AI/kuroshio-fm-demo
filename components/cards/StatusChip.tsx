@@ -22,7 +22,7 @@ export function StatusChip({ status, label, className }: { status: HealthStatus;
 }
 
 const PRIORITY: Record<Priority, { label: string; className: string }> = {
-  P1: { label: "P1 · Critical", className: "bg-danger text-white" },
+  P1: { label: "P1 · Critical", className: "bg-danger-strong text-white" },
   P2: { label: "P2 · High", className: "bg-warning/20 text-foreground ring-1 ring-warning/50" },
   P3: { label: "P3 · Normal", className: "bg-muted text-muted-foreground ring-1 ring-border" },
 };

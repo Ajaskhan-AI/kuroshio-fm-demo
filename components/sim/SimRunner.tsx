@@ -18,7 +18,15 @@ export function SimRunner() {
     init();
     window.__kfm = useSim;
     const id = setInterval(() => tick(), CONFIG.tickMs);
-    return () => clearInterval(id);
+    // Browsers slow timers in background tabs; catch up the moment the demo is in front again.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
   return null;
 }

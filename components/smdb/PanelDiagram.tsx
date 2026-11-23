@@ -50,7 +50,7 @@ function Stat({ label, value, className }: { label: string; value: React.ReactNo
 
 /** Feeder state in words + icon, from its worst open alarm. */
 function feederState(f: Feeder, alarm: Alarm | undefined) {
-  if (f.tripped) return { label: "Tripped", icon: X, cls: "bg-danger text-white" };
+  if (f.tripped) return { label: "Tripped", icon: X, cls: "bg-danger-strong text-white" };
   if (!alarm) return { label: "Normal", icon: CheckCircle2, cls: "bg-success-tint text-success" };
   const label =
     alarm.type === "overload" ? "Overloaded" : alarm.type === "low-pf" ? "Low PF" : alarm.type === "phase-imbalance" ? "Imbalance" : alarm.type === "bms-mismatch" ? "BMS mismatch" : alarm.title;
@@ -84,7 +84,7 @@ function FeederCard({
         title={f.tripped ? "Breaker open" : "Breaker closed"}
         className={cn(
           "absolute left-1.5 top-[1.3rem] z-[1] grid size-4 place-items-center rounded-[3px] border-2 md:left-1/2 md:top-1.5 md:-translate-x-1/2",
-          f.tripped ? "border-danger bg-danger text-white" : "border-primary bg-card",
+          f.tripped ? "border-danger-strong bg-danger-strong text-white" : "border-primary bg-card",
         )}
       >
         {f.tripped && <X className="size-3" strokeWidth={3} />}

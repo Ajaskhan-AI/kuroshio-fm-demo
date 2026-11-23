@@ -70,7 +70,7 @@ export function AlarmToaster() {
               role="alert"
               className={cn(
                 "pointer-events-auto flex w-full items-start gap-3 rounded-xl border p-3 shadow-lg",
-                critical ? "border-danger bg-danger text-white" : "border-warning/50 bg-popover text-foreground",
+                critical ? "border-danger-strong bg-danger-strong text-white" : "border-warning/50 bg-popover text-foreground",
               )}
             >
               <Icon className={cn("mt-0.5 size-5 shrink-0", critical ? "text-white" : "text-warning")} aria-hidden />
@@ -78,7 +78,7 @@ export function AlarmToaster() {
                 <p className="text-sm font-bold">
                   {a.priority} · {a.title}
                 </p>
-                <p className={cn("truncate text-sm", critical ? "text-white/90" : "text-muted-foreground")}>
+                <p className={cn("truncate text-sm", critical ? "text-white" : "text-muted-foreground")}>
                   {getBuilding(a.buildingId)?.name} · {a.detail}
                 </p>
                 <p className={cn("mt-1 text-xs font-semibold", critical ? "text-white" : "text-primary")}>
