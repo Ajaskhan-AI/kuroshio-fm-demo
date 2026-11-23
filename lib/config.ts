@@ -94,6 +94,21 @@ export const CONFIG = {
   /** Power factor below this risks a utility penalty or surcharge. Demo assumption. */
   pfPenaltyThreshold: 0.9,
 
+  /**
+   * ROI calculator starting values (CLAUDE.md §6.8). Prices are demo assumptions, not a quote:
+   * the page shows them and lets the visitor change them.
+   */
+  roi: {
+    inputs: { buildings: 6, smdbsPerBuilding: 8, technicians: 4, hourlyCostAed: 45, monthlyBillAed: 600_000 },
+    assumptions: {
+      energySavingPct: 5,
+      readingsPerSmdbPerDay: 2,
+      minutesPerReading: 6,
+      hardwarePerSmdbAed: 6_000,
+      monthlyPerSmdbAed: 250,
+    },
+  },
+
   /** Manual meter-reading rounds a technician would otherwise do, per panel per day. Demo assumption. */
   manualRoundsPerPanelPerDay: 2,
   /** Minutes a technician spends reaching and reading one panel by hand. Demo assumption. */
