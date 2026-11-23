@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Presentation } from "lucide-react";
 import { NAV_ITEMS, screenForPath } from "@/lib/nav";
 import { useUiStore } from "@/lib/ui-store";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ export function Sidebar() {
   const buildingId = useUiStore((s) => s.buildingId);
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggle = useUiStore((s) => s.toggleSidebar);
+  const setPresenterOpen = useUiStore((s) => s.setPresenterOpen);
 
   return (
     <aside
@@ -70,7 +71,25 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <div className="border-t border-border p-3">
+      <div className="flex flex-col gap-1 border-t border-border p-3">
+        <button
+          type="button"
+          onClick={() => setPresenterOpen(true)}
+          className={cn(
+            "flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm text-muted-foreground hover:bg-accent hover:text-foreground",
+            collapsed && "justify-center px-0",
+          )}
+          aria-label="Presenter: incident, reset, keys"
+          title="Presenter (press ?)"
+        >
+          <Presentation className="size-5" />
+          {!collapsed && (
+            <>
+              <span>Presenter</span>
+              <kbd className="ml-auto text-[11px] opacity-50">?</kbd>
+            </>
+          )}
+        </button>
         <button
           type="button"
           onClick={toggle}

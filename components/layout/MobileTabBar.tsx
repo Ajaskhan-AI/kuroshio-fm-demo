@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Presentation } from "lucide-react";
 import { MOBILE_TABS, NAV_ITEMS, screenForPath } from "@/lib/nav";
 import { useUiStore } from "@/lib/ui-store";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ export function MobileTabBar() {
   const active = screenForPath(pathname);
   const buildingId = useUiStore((s) => s.buildingId);
   const [moreOpen, setMoreOpen] = useState(false);
+  const setPresenterOpen = useUiStore((s) => s.setPresenterOpen);
 
   const tabs = MOBILE_TABS.map((k) => NAV_ITEMS.find((n) => n.key === k)!);
   const moreItems = NAV_ITEMS.filter((n) => !MOBILE_TABS.includes(n.key));
@@ -75,6 +76,19 @@ export function MobileTabBar() {
                 </li>
               );
             })}
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  setMoreOpen(false);
+                  setPresenterOpen(true);
+                }}
+                className="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium hover:bg-accent"
+              >
+                <Presentation className="size-5" aria-hidden />
+                Presenter
+              </button>
+            </li>
             <li className="mt-2 flex min-h-12 items-center justify-between border-t border-border px-3 pt-2 text-sm">
               Dark mode
               <ThemeToggle />

@@ -8,6 +8,8 @@ import { useUiStore } from "@/lib/ui-store";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SimRunner } from "@/components/sim/SimRunner";
 import { AlarmToaster } from "@/components/alarms/AlarmToaster";
+import { Kiosk } from "@/components/presenter/Kiosk";
+import { Presenter } from "@/components/presenter/Presenter";
 import { selectOpenAlarmCount, useSim } from "@/lib/sim/store";
 import { Breadcrumbs } from "./Breadcrumbs";
 import { MobileTabBar } from "./MobileTabBar";
@@ -48,6 +50,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
       <MobileTabBar />
       <AlarmToaster />
+      <Presenter />
+      <Kiosk />
     </TooltipProvider>
   );
 }

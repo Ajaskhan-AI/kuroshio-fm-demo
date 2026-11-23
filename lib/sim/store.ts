@@ -7,6 +7,7 @@ import { create } from "zustand";
 import type { Priority } from "../config";
 import type { Trade, WorkOrderStatus } from "../types";
 import { advance, newWorkOrder } from "./engine";
+import { INCIDENT } from "./scenario";
 import { createInitialState } from "./seed";
 import { EMPTY_SIM, isOpen, type SimData } from "./state";
 
@@ -15,6 +16,8 @@ interface SimActions {
   init: () => void;
   tick: (now?: number) => void;
   reset: () => void;
+  /** Start (or restart) the scripted Marina Tower A incident. */
+  triggerIncident: () => void;
   acknowledgeAlarm: (alarmId: string) => void;
   /** Manual work order, e.g. from the BMS cross-check or an asset page. Returns its id. */
   createWorkOrder: (input: { buildingId: string; priority: Priority; title: string; trade: Trade; alarmId?: string }) => string;
@@ -37,6 +40,14 @@ export const useSim = create<SimStore>()((set, get) => ({
   },
 
   reset: () => set(createInitialState(Date.now())),
+
+  triggerIncident: () => {
+    const s = get();
+    if (!s.ready) return;
+    // Restarting mid-incident: begin again from the pump's pre-incident state.
+    const pumpBaseline = s.incident?.pumpBaseline ?? s.assets[INCIDENT.pumpId];
+    set({ incident: { startedAt: Date.now(), pumpBaseline }, assets: { ...s.assets, [INCIDENT.pumpId]: pumpBaseline } });
+  },
 
   acknowledgeAlarm: (alarmId) =>
     set((s) => ({

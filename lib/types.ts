@@ -201,4 +201,6 @@ export interface Fault {
   pointId?: string;
   startedAt: number;
   endsAt: number;
+  /** bms-override only: the power the overridden unit keeps drawing, kW (default: 45 % of normal). */
+  kw?: number;
 }

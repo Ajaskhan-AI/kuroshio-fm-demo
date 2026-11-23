@@ -10,8 +10,12 @@ export function readTheme(): Theme {
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
+/** Fired on window whenever the theme changes, so every toggle button stays in step. */
+export const THEME_EVENT = "kfm-theme-change";
+
 export function applyTheme(theme: Theme): void {
   document.documentElement.classList.toggle("dark", theme === "dark");
+  window.dispatchEvent(new Event(THEME_EVENT));
   try {
     localStorage.setItem(THEME_STORAGE_KEY, theme);
   } catch {

@@ -2,16 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
-import { applyTheme, readTheme, type Theme } from "@/lib/theme";
+import { THEME_EVENT, applyTheme, readTheme, type Theme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
-    // Sync with the class the boot script set before paint.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTheme(readTheme());
+    // Sync with the class the boot script set before paint, and with presenter-key toggles.
+    const sync = () => setTheme(readTheme());
+    sync();
+    window.addEventListener(THEME_EVENT, sync);
+    return () => window.removeEventListener(THEME_EVENT, sync);
   }, []);
 
   const next: Theme = theme === "dark" ? "light" : "dark";

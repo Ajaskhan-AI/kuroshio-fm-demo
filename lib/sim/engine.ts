@@ -19,6 +19,7 @@ import type {
 import { HOUR, MINUTE, buildingKwAt, dubaiDayOfMonth, dubaiDayStart, dubaiHour, loadFactor } from "./generators";
 import { between, clamp, jitter, pick } from "./random";
 import { assetConditions, bmsConditions, crossCheckConditions, panelConditions, type Condition } from "./rules";
+import { INCIDENT, incidentFaults, incidentPanelTemp, incidentPump } from "./scenario";
 import { isOpen, type SimData } from "./state";
 
 const SQRT3 = Math.sqrt(3);
@@ -53,10 +54,20 @@ export const METERED_EQUIPMENT = ["AHU-1", "AHU-2", "AHU-3", "Chiller-1", "Chill
 /** What the plant is physically doing, per equipment: BMS state, plus overrides the BMS can't see. */
 interface PlantState {
   bmsOn: Map<string, boolean>;
-  overridden: Set<string>;
+  /** Equipment kept running behind the BMS's back, with the kW it draws (undefined = 45 % of normal). */
+  overridden: Map<string, number | undefined>;
 }
 
-function updatePanel(p: Panel, buildingKw: number, lf: number, dt: number, now: number, faults: FaultIndex, plant: PlantState): Panel {
+function updatePanel(
+  p: Panel,
+  buildingKw: number,
+  lf: number,
+  dt: number,
+  now: number,
+  faults: FaultIndex,
+  plant: PlantState,
+  tempOverride?: number,
+): Panel {
   const pf = faults.panel.get(p.id);
   if (pf?.has("panel-offline")) {
     // Meter silent: keep the last values, status offline, no new timestamp.
@@ -81,7 +92,7 @@ function updatePanel(p: Panel, buildingKw: number, lf: number, dt: number, now: 
     let kw = tripped ? 0 : panelKw * f.share * jitter(0.02);
     // Equipment the BMS has switched off draws only standby power — unless something overrides it.
     if (!tripped && plant.bmsOn.get(f.name) === false) {
-      kw = plant.overridden.has(f.name) ? kw * 0.45 : 0.2 + Math.random() * 0.15;
+      kw = plant.overridden.has(f.name) ? (plant.overridden.get(f.name) ?? kw * 0.45) * jitter(0.015) : 0.2 + Math.random() * 0.15;
     }
     if (ff?.has("overload")) {
       // Push the feeder to ~108 % of its breaker rating.
@@ -103,7 +114,8 @@ function updatePanel(p: Panel, buildingKw: number, lf: number, dt: number, now: 
   // Panel temperature eases toward a load-dependent target (and a fault target when one applies).
   let target = p.baseTempC + 4 * lf;
   if (pf?.has("panel-hot")) target = 49.5;
-  const tempC = p.tempC + (target - p.tempC) * 0.15 + (Math.random() - 0.5) * 0.12;
+  const tempC =
+    tempOverride !== undefined ? tempOverride + (Math.random() - 0.5) * 0.12 : p.tempC + (target - p.tempC) * 0.15 + (Math.random() - 0.5) * 0.12;
 
   return {
     ...p,
@@ -167,7 +179,7 @@ function randomFault(s: SimData, now: number, id: string): Fault | null {
   const total = MINOR_KINDS.reduce((a, k) => a + k.weight, 0);
   let roll = r() * total;
   const kind = MINOR_KINDS.find((k) => (roll -= k.weight) < 0)?.kind ?? "low-pf";
-  const b = pick(r, BUILDINGS);
+  const b = pick(r, s.incident ? BUILDINGS.filter((x) => x.id !== INCIDENT.buildingId) : BUILDINGS);
   const ev = CONFIG.minorEvents;
   const base = { id, kind, buildingId: b.id, startedAt: now, endsAt: now + between(r, ev.minDurationS, ev.maxDurationS) * 1000 };
 
@@ -251,7 +263,13 @@ export function advance(s: SimData, now: number): SimData {
     const ev = CONFIG.minorEvents;
     nextMinorAt = now + between(Math.random, ev.minIntervalS, ev.maxIntervalS) * 1000;
   }
-  const fi = indexFaults(faults);
+  // The scripted incident layers its own faults and readings on top (never stored in s.faults).
+  const inc = s.incident;
+  const incElapsedS = inc ? (now - inc.startedAt) / 1000 : 0;
+  const fi = indexFaults(inc ? [...faults, ...incidentFaults(inc.startedAt, now)] : faults);
+  const faultKw = new Map<string, number>();
+  if (inc) for (const f of incidentFaults(inc.startedAt, now)) if (f.pointId && f.kw !== undefined) faultKw.set(f.pointId, f.kw);
+  for (const f of faults) if (f.pointId && f.kw !== undefined) faultKw.set(f.pointId, f.kw);
 
   // 2. Live electrical and BMS values.
   const panels: SimData["panels"] = {};
@@ -261,16 +279,17 @@ export function advance(s: SimData, now: number): SimData {
     const kw = buildingKwAt(b.info.id, b.info.type, b.peakKw, now) * jitter(0.01);
     const pts = updateBms(s.bmsPoints[b.info.id], b, hour, lf, now, fi);
     bmsPoints[b.info.id] = pts;
-    const plant: PlantState = { bmsOn: new Map(), overridden: new Set() };
+    const plant: PlantState = { bmsOn: new Map(), overridden: new Map() };
     for (const pt of pts) {
       if (pt.kind !== "status" || !(METERED_EQUIPMENT as readonly string[]).includes(pt.equipment)) continue;
       plant.bmsOn.set(pt.equipment, pt.value === 1);
-      if (fi.point.get(pt.id)?.has("bms-override")) plant.overridden.add(pt.equipment);
+      if (fi.point.get(pt.id)?.has("bms-override")) plant.overridden.set(pt.equipment, faultKw.get(pt.id));
     }
     for (const id of s.panelIds[b.info.id]) {
       let p = s.panels[id];
       if (newDay) p = { ...p, feeders: p.feeders.map((f) => ({ ...f, kwhToday: 0 })) };
-      panels[id] = updatePanel(p, kw, lf, dt, now, fi, plant);
+      const tempOverride = inc && id === INCIDENT.panelId ? incidentPanelTemp(incElapsedS) : undefined;
+      panels[id] = updatePanel(p, kw, lf, dt, now, fi, plant, tempOverride);
     }
   }
 
@@ -284,7 +303,12 @@ export function advance(s: SimData, now: number): SimData {
     const feeders = s.panelIds[b.info.id].flatMap((id) => panels[id].feeders);
     conditions.push(...crossCheckConditions(b.info.id, bmsPoints[b.info.id], feeders));
   }
-  for (const a of Object.values(s.assets)) conditions.push(...assetConditions(a, wasActive));
+  let assets = s.assets;
+  if (inc) {
+    const pump = incidentPump(s.assets[INCIDENT.pumpId], inc.pumpBaseline, incElapsedS);
+    if (pump) assets = { ...s.assets, [INCIDENT.pumpId]: pump };
+  }
+  for (const a of Object.values(assets)) conditions.push(...assetConditions(a, wasActive));
   const condByKey = new Map(conditions.map((c) => [c.key, c]));
 
   // 4. Alarms: clear what resolved, raise what's new (each new alarm opens a work order).
@@ -369,5 +393,5 @@ export function advance(s: SimData, now: number): SimData {
     };
   }
 
-  return { ...s, now, buildings, panels, bmsPoints, alarms, workOrders, faults, nextMinorAt, seq };
+  return { ...s, now, buildings, panels, bmsPoints, assets, alarms, workOrders, faults, nextMinorAt, seq };
 }

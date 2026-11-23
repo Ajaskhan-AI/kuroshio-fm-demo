@@ -1,5 +1,12 @@
 import type { Alarm, Asset, BmsPoint, BuildingLive, Fault, Panel, Technician, WorkOrder } from "../types";
 
+/** The scripted Marina Tower A incident, while it runs (lib/sim/scenario.ts). */
+export interface IncidentState {
+  startedAt: number;
+  /** CHW Pump-2 before the incident, so its decline can be drawn from the real history. */
+  pumpBaseline: Asset;
+}
+
 /** Everything the simulation owns. Screens read slices of this through the Zustand store. */
 export interface SimData {
   ready: boolean;
@@ -20,6 +27,7 @@ export interface SimData {
   faults: Fault[];
   nextMinorAt: number;
   seq: { alarm: number; workOrder: number; fault: number };
+  incident: IncidentState | null;
 }
 
 export const EMPTY_SIM: SimData = {
@@ -37,6 +45,7 @@ export const EMPTY_SIM: SimData = {
   faults: [],
   nextMinorAt: 0,
   seq: { alarm: 0, workOrder: 0, fault: 0 },
+  incident: null,
 };
 
 export const isOpen = (a: Alarm) => a.status !== "cleared";
