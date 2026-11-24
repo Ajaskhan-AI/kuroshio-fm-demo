@@ -1,5 +1,6 @@
 import {
   Activity,
+  AudioWaveform,
   BellRing,
   Building2,
   Calculator,
@@ -32,9 +33,10 @@ export type ScreenKey =
   | "maintenance"
   | "reports"
   | "roi"
-  | "ksense";
+  | "ksense"
+  | "kpulse";
 
-// Order matters: presenter mode keys 1–9 follow this list (CLAUDE.md §9).
+// Order matters: presenter mode keys 1–9, then 0, follow this list (CLAUDE.md §9).
 export const NAV_ITEMS: readonly NavItem[] = [
   { key: "portfolio", label: "Portfolio overview", short: "Overview", icon: LayoutGrid, scoped: false, href: () => "/" },
   { key: "smdb", label: "Live SMDB monitor", short: "Live", icon: Activity, scoped: true, href: (id) => `/buildings/${id}/smdb` },
@@ -45,6 +47,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { key: "reports", label: "Carbon and reports", short: "Reports", icon: FileText, scoped: false, href: () => "/reports" },
   { key: "roi", label: "ROI and book a pilot", short: "ROI", icon: Calculator, scoped: false, href: () => "/roi" },
   { key: "ksense", label: "K-Sense cold chain", short: "Cold chain", icon: Snowflake, scoped: false, href: () => "/ksense" },
+  { key: "kpulse", label: "K-Pulse rotating assets", short: "K-Pulse", icon: AudioWaveform, scoped: false, href: () => "/kpulse" },
 ] as const;
 
 /** Phone bottom bar: Overview, Live, Alarms, Energy, More (CLAUDE.md §5). */

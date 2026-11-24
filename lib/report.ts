@@ -11,6 +11,13 @@ import { slaStats } from "./sim/sla";
 import type { SimData } from "./sim/state";
 import { scope2Tco2e } from "./tariff";
 import type { Alarm, BuildingLive, Priority } from "./types";
+import type { Observation, RotatingAsset } from "./kpulse/types";
+
+/** K-Pulse findings for the report (optional: the FM report works without them). */
+export interface PulseInput {
+  observations: Observation[];
+  assets: Record<string, RotatingAsset>;
+}
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const MONTHS_LONG = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -112,7 +119,7 @@ export interface ReportData {
   daily: { day: number; kwh: number; costAed: number; tco2e: number; peakKw: number; partial: boolean }[];
 }
 
-export function buildReport(s: SimData, buildingId: string, now: number): ReportData | null {
+export function buildReport(s: SimData, buildingId: string, now: number, pulse?: PulseInput): ReportData | null {
   const b = s.buildings[buildingId];
   const info = getBuilding(buildingId);
   if (!b || !info) return null;
@@ -149,11 +156,22 @@ export function buildReport(s: SimData, buildingId: string, now: number): Report
     daily.push({ day, kwh, costAed: kwh * b.rateAedPerKwh, tco2e: scope2Tco2e(kwh), peakKw, partial });
   }
 
-  const incidents = s.alarms
-    .filter((a) => a.buildingId === buildingId && a.priority !== "P3" && a.raisedAt >= start)
+  // Rotating-equipment findings from K-Pulse for this building, highest priority first.
+  const pulseObs = (pulse?.observations ?? [])
+    .filter((o) => o.buildingId === buildingId && o.status !== "cleared")
+    .sort((a, c) => a.priority.localeCompare(c.priority) || c.raisedAt - a.raisedAt);
+  const tagOf = (o: Observation) => pulse?.assets[o.assetId]?.tag ?? "";
+
+  const incidents = [
+    ...s.alarms
+      .filter((a) => a.buildingId === buildingId && a.priority !== "P3" && a.raisedAt >= start)
+      .map((a) => ({ priority: a.priority, title: a.title, detail: a.detail, raisedAt: a.raisedAt, status: a.status })),
+    ...pulseObs
+      .filter((o) => o.priority !== "P3" && o.raisedAt >= start)
+      .map((o) => ({ priority: o.priority, title: `${tagOf(o)} ${o.title.toLowerCase()} (K-Pulse)`, detail: o.evidence[0] ?? o.summary, raisedAt: o.raisedAt, status: o.status })),
+  ]
     .sort((a, c) => c.raisedAt - a.raisedAt)
-    .slice(0, 6)
-    .map((a) => ({ priority: a.priority, title: a.title, detail: a.detail, raisedAt: a.raisedAt, status: a.status }));
+    .slice(0, 6);
 
   // Top 3 recommendations: biggest waste, worst motor, then power factor or the next waste item.
   const recs: ReportData["recommendations"] = [];
@@ -167,6 +185,10 @@ export function buildReport(s: SimData, buildingId: string, now: number): Report
       title: `${worstAsset.name}: ${worstAsset.recommendation.replace(/\.$/, "")}`,
       detail: `Health ${Math.round(worstAsset.health)}/100${worstAsset.daysToFailure !== null ? `, about ${worstAsset.daysToFailure} days to failure` : ""}. Planned repair costs less than a breakdown.`,
     });
+  }
+  const topPulse = pulseObs[0];
+  if (topPulse) {
+    recs.push({ title: `${tagOf(topPulse)}: ${topPulse.action.replace(/\.$/, "")}`, detail: `K-Pulse vibration finding: ${topPulse.title.toLowerCase()} (${topPulse.confidence} % confidence). ${topPulse.impact}` });
   }
   const pf = buildingPf(panels);
   if (pfRisk(pf) !== "low") {

@@ -51,7 +51,7 @@ export function Sidebar() {
                 <Icon className="size-5 shrink-0" aria-hidden />
                 {collapsed ? <span className="sr-only">{item.label}</span> : <span className="truncate">{item.label}</span>}
                 {!collapsed && (
-                  <kbd className={cn("ml-auto text-[11px] tabular-nums opacity-50", isActive && "opacity-70")}>{i + 1}</kbd>
+                  <kbd className={cn("ml-auto text-[11px] tabular-nums opacity-50", isActive && "opacity-70")}>{(i + 1) % 10}</kbd>
                 )}
               </Link>
             );

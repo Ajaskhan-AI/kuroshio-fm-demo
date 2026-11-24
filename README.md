@@ -19,9 +19,10 @@ npm run lint
 
 | Key | Action |
 |---|---|
-| `1`–`9` | Jump to a screen (menu order) |
+| `1`–`9`, `0` | Jump to a screen (menu order; `0` is K-Pulse) |
 | `I` | Start the Marina Tower A incident |
 | `K` | Start the K-Sense cold-chain incident |
+| `P` | Start the K-Pulse pump cavitation incident |
 | `R` | Reset the simulation |
 | `D` | Dark mode on / off |
 | `?` | Presenter panel (same actions as buttons, for tablets) |
@@ -40,9 +41,15 @@ without a touch it tours every screen, 12 s each, replaying the incident each la
 −21 → −12 °C (P1 excursion, stock at risk), the door closes and it recovers into the excursion log. Meanwhile KIZAD PH-02
 suction pressure falls 3.9 → 2.7 bar: a refrigerant leak flagged while the room is still in range.
 
+**K-Pulse rotating assets (`0`, then `P`, about 30 s):** Marina Tower A stand-by pump CHW-P4 trips and CHW-P3
+runs out to 135 % of its best-efficiency flow. On the Pump curves tab the live dot slides along the H–Q curve, the NPSH
+margin falls from about 2.6 m to 0.3 m, and the AI flags cavitation (P2) with its evidence and raises a work order.
+Also worth showing: BB Plaza CHW-P1 (early bearing wear, Spectrum tab), Reem CT-F1 (unbalance, zone C).
+
 ## Where things live
 
 - `lib/config.ts` — every demo assumption: tariff, emission factor, SLA targets, thresholds, ROI prices.
 - `lib/sim/` — the simulation: seeded portfolio, 2 s tick, alarm rules, scripted incident.
 - `lib/ksense/` — K-Sense cold-chain simulation: fictional cold stores, bands, pressures, scripted incident.
+- `lib/kpulse/` — K-Pulse vibration simulation: machines, pump curves, spectrum, diagnosis rules, scripted incident.
 - `components/` — one folder per screen; `app/` — routes.
