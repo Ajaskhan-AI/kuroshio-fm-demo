@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, Eye, FileSpreadsheet, FileText } from "lucide-react";
 import logo from "@/public/kuroshio-logo.jpg";
 import { BUILDINGS, getBuilding } from "@/lib/buildings";
+import { usePulse } from "@/lib/kpulse/store";
 import { buildReport, reportCsv, type ReportData } from "@/lib/report";
 import { useSim } from "@/lib/sim/store";
 import { ChipGroup } from "@/components/cards/ChipGroup";
@@ -60,7 +61,7 @@ export function ReportsView() {
 
   // Freeze the numbers when the preview opens so what you see is exactly what downloads.
   const preview = () => {
-    setSnapshot(buildReport(useSim.getState(), buildingId, Date.now()));
+    setSnapshot(buildReport(useSim.getState(), buildingId, Date.now(), usePulse.getState()));
     setError(null);
     setOpen(true);
   };
@@ -82,7 +83,7 @@ export function ReportsView() {
   };
 
   const downloadCsv = (r: ReportData | null) => {
-    const data = r ?? buildReport(useSim.getState(), buildingId, Date.now());
+    const data = r ?? buildReport(useSim.getState(), buildingId, Date.now(), usePulse.getState());
     if (data) save(new Blob([reportCsv(data)], { type: "text/csv;charset=utf-8" }), `${fileBase(data)}.csv`);
   };
 

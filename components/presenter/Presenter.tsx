@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Flame, Keyboard, MonitorPlay, Moon, RotateCcw, Snowflake } from "lucide-react";
+import { AudioWaveform, Flame, Keyboard, MonitorPlay, Moon, RotateCcw, Snowflake } from "lucide-react";
 import { NAV_ITEMS, buildingIdForPath } from "@/lib/nav";
 import { useCold } from "@/lib/ksense/store";
+import { PULSE_INCIDENT } from "@/lib/kpulse/scenario";
+import { usePulse } from "@/lib/kpulse/store";
 import { INCIDENT } from "@/lib/sim/scenario";
 import { useSim } from "@/lib/sim/store";
 import { applyTheme, readTheme } from "@/lib/theme";
@@ -31,9 +33,15 @@ export function usePresenterActions() {
     if (pathname !== "/ksense") router.push("/ksense");
   }, [pathname, router]);
 
+  const startPulseIncident = useCallback(() => {
+    usePulse.getState().triggerIncident();
+    router.push(`/kpulse?asset=${encodeURIComponent(PULSE_INCIDENT.pumpId)}&tab=curves`);
+  }, [router]);
+
   const reset = useCallback(() => {
     useSim.getState().reset();
     useCold.getState().reset();
+    usePulse.getState().reset();
   }, []);
   const toggleDark = useCallback(() => applyTheme(readTheme() === "dark" ? "light" : "dark"), []);
   const goTo = useCallback(
@@ -43,13 +51,14 @@ export function usePresenterActions() {
     },
     [router],
   );
-  return { startIncident, startColdIncident, reset, toggleDark, goTo };
+  return { startIncident, startColdIncident, startPulseIncident, reset, toggleDark, goTo };
 }
 
 const KEYS: [string, string][] = [
-  ["1 – 9", "Jump to a screen (same order as the menu)"],
+  ["1 – 9, 0", "Jump to a screen (same order as the menu; 0 is the 10th)"],
   ["I", "Start the Marina Tower A incident"],
   ["K", "Start the K-Sense cold-chain incident"],
+  ["P", "Start the K-Pulse pump cavitation incident"],
   ["R", "Reset the simulation"],
   ["D", "Dark mode on / off"],
   ["?", "Show or hide this panel"],
@@ -66,15 +75,18 @@ export function Presenter() {
   const setOpen = useUiStore((s) => s.setPresenterOpen);
   const incident = useSim((s) => s.incident);
   const coldIncident = useCold((s) => s.incident);
-  const { startIncident, startColdIncident, reset, toggleDark, goTo } = usePresenterActions();
+  const pulseIncident = usePulse((s) => s.incident);
+  const { startIncident, startColdIncident, startPulseIncident, reset, toggleDark, goTo } = usePresenterActions();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target)) return;
       const k = e.key;
       if (k >= "1" && k <= "9") goTo(Number(k) - 1);
+      else if (k === "0") goTo(9);
       else if (k === "i" || k === "I") startIncident();
       else if (k === "k" || k === "K") startColdIncident();
+      else if (k === "p" || k === "P") startPulseIncident();
       else if (k === "r" || k === "R") reset();
       else if (k === "d" || k === "D") toggleDark();
       else if (k === "?") setOpen(!useUiStore.getState().presenterOpen);
@@ -83,7 +95,7 @@ export function Presenter() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [goTo, startIncident, startColdIncident, reset, toggleDark, setOpen]);
+  }, [goTo, startIncident, startColdIncident, startPulseIncident, reset, toggleDark, setOpen]);
 
   const btn = "inline-flex min-h-11 w-full items-center gap-3 rounded-lg border border-border bg-card px-4 text-left text-sm font-semibold hover:border-primary/50";
 
@@ -123,6 +135,18 @@ export function Presenter() {
             type="button"
             className={btn}
             onClick={() => {
+              startPulseIncident();
+              setOpen(false);
+            }}
+          >
+            <AudioWaveform className="size-5 text-primary" aria-hidden />
+            <span className="flex-1">{pulseIncident ? "Restart the pump cavitation incident" : "Start the pump cavitation incident"}</span>
+            <kbd className="text-xs text-muted-foreground">P</kbd>
+          </button>
+          <button
+            type="button"
+            className={btn}
+            onClick={() => {
               reset();
               setOpen(false);
             }}
@@ -155,6 +179,10 @@ export function Presenter() {
           <p className="text-xs text-muted-foreground">
             The cold-chain incident (K-Sense): the Jebel Ali FR-02 dock door is left open and the freezer climbs from −21 to −12 °C, then recovers and
             lands in the excursion log. At the same time KIZAD PH-02 suction pressure falls: a refrigerant leak caught while the room is still in range.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            The pump incident (K-Pulse): Marina Tower A stand-by pump CHW-P4 trips, so CHW-P3 runs out to 135 % of its best-efficiency flow. Its live
+            dot slides along the pump curve, the NPSH margin falls from about 2.6 m to 0.3 m, and the AI flags cavitation and raises a work order.
           </p>
 
           <h3 className="mt-4 flex items-center gap-2 text-sm font-semibold">

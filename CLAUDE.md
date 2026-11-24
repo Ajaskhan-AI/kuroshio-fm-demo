@@ -136,6 +136,14 @@ K-Sense is Kuroshio's own sensor product, shown as a **live module** (no "Pilot-
 - **Alarms:** temperature excursion (P1 frozen/pharma, P2 others), door open too long (P2), possible refrigerant leak (P2, predictive), high discharge pressure (P2), relief port iced (P3), sensor low battery (P3).
 - **Scripted incident (key `K`, presenter panel):** (1) Jebel Ali FR-02 dock door left open: −21 → −12 °C, P1 excursion with stock at risk, door closes at 35 s, recovers, excursion lands in the log with peak and duration; (2) in parallel, KIZAD PH-02 suction pressure falls 3.9 → 2.7 bar while the room is still in range: leak caught before the temperature moves.
 
+### 6.10 K-Pulse rotating assets (`/kpulse`) — 10th menu item, key `0`
+K-Pulse is vibration condition monitoring for **pumps, compressors, motors and fans** in the six FM buildings. Four sensor points per machine (motor NDE/DE, machine DE/NDE). All values simulated; zone limits follow the shape of ISO 10816-3 (velocity RMS, rigid foundation), every other threshold is a demo assumption in `lib/kpulse/config.ts`.
+- **Measured per point:** velocity RMS X/Y/Z (mm/s), acceleration RMS (g), HF / envelope acceleration (gE), kurtosis, crest factor, bearing temperature. Per machine: kW, current, PF. Pumps add flow (meter or **virtual flow meter**, labelled as an AI estimate), suction/discharge pressure, head, efficiency, NPSH available/required. Compressors add specific power, load, surge margin (centrifugal) or load/unload cycles (air).
+- **Fleet (14 machines, `lib/kpulse/assets.ts`):** health ring, ISO zone (letter + words), 24 h velocity sparkline, top AI observation; filters by building, type, status; latest observations panel.
+- **Asset detail tabs:** Overview (machine drawing with clickable sensor points, readings, days to alert limit, AI cards) · Vibration (velocity over ISO zone bands, HF + acceleration, kurtosis + crest, temperature; 24 h/7 d/30 d) · Pump curves (H–Q with factory curve, curve at VFD speed, 30-day trail and pulsing live point; NPSH margin; efficiency; power; vibration vs flow; kWh/m³) or Performance for compressors and fans · Spectrum (FFT with fault-frequency markers, healthy baseline overlay, markers the AI used highlighted) · AI observations (cards + timeline incl. closed ones).
+- **AI observations (`lib/kpulse/rules.ts`):** cavitation, off-BEP, impeller wear, bearing wear (early / damage), lubrication, unbalance, misalignment, motor electrical (100 Hz), belt, surge, danger zone, unexpected stop. Each lists its evidence, a next step, what is at stake (AED), and a confidence. New P1/P2 observations open a work order in the shared FM list; the monthly report lists them.
+- **Scripted incident (key `P`, presenter panel, about 30 s):** Marina Tower A stand-by pump CHW-P4 trips, CHW-P3 runs out to 135 % of BEP flow at full speed; NPSH margin falls from about 2.6 m to 0.3 m, cavitation follows from the margin (not scripted), HF and broadband noise rise, P2 cavitation observation + work order.
+
 ## 7. Simulated data
 
 ### Fictional portfolio (6 buildings)
@@ -175,7 +183,7 @@ K-Sense is Kuroshio's own sensor product, shown as a **live module** (no "Pilot-
 - Tick interval.
 
 ## 9. Event modes
-- **Presenter mode** (keyboard): `1`–`9` jump to screens, `I` trigger the incident, `K` trigger the K-Sense cold-chain incident, `R` reset simulation, `D` toggle dark mode. Show a tiny hint overlay on `?`.
+- **Presenter mode** (keyboard): `1`–`9` and `0` jump to screens, `I` trigger the incident, `K` trigger the K-Sense cold-chain incident, `P` trigger the K-Pulse pump cavitation incident, `R` reset simulation, `D` toggle dark mode. Show a tiny hint overlay on `?`.
 - **Kiosk mode:** `?kiosk=1` in URL. After 60 s with no input, auto-cycle screens every 12 s with the incident running. Any touch/click stops it.
 
 ## 10. Folder structure
